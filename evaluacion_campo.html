@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evaluación — Equipo de Campo | Eligiendo mi Camino</title>
+<style>
+  :root {
+    --primary: #1a73e8;
+    --primary-dark: #1557b0;
+    --danger: #d93025;
+    --success: #188038;
+    --bg: #f0f2f5;
+    --card: #ffffff;
+    --border: #dadce0;
+    --text: #202124;
+    --text-secondary: #5f6368;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .container { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
+
+  /* Header */
+  .header {
+    background: var(--primary);
+    color: white;
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 120px; height: 100%;
+    background: rgba(255,255,255,0.08);
+    transform: skewX(-15deg);
+  }
+  .header h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 4px; }
+  .header p { font-size: 0.9rem; opacity: 0.9; }
+
+  /* Timer */
+  .timer-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--card);
+    border-bottom: 2px solid var(--border);
+    padding: 10px 24px;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .timer-bar.visible { display: flex; }
+  .timer-display {
+    font-size: 1.4rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--primary);
+  }
+  .timer-display.warning { color: #e37400; }
+  .timer-display.critical { color: var(--danger); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: 0.5; } }
+  .progress-bar {
+    flex: 1;
+    height: 6px;
+    background: #e8eaed;
+    border-radius: 3px;
+    margin: 0 16px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 3px;
+    transition: width 1s linear, background 0.3s;
+  }
+
+  /* Card */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-bottom: 16px;
+  }
+  .card.section-title {
+    border-left: 5px solid var(--primary);
+    background: #f8f9ff;
+  }
+  .card.section-title h2 { font-size: 1.15rem; color: var(--primary); }
+
+  /* DNI screen */
+  #dni-screen .card { text-align: center; }
+  #dni-screen input[type="text"] {
+    font-size: 1.6rem;
+    text-align: center;
+    letter-spacing: 6px;
+    padding: 12px 20px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    width: 280px;
+    margin: 16px 0;
+    outline: none;
+    transition: border 0.2s;
+  }
+  #dni-screen input:focus { border-color: var(--primary); }
+  .dni-error { color: var(--danger); font-size: 0.85rem; min-height: 20px; }
+
+  /* Questions */
+  .q-number {
+    display: inline-block;
+    background: var(--primary);
+    color: white;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 28px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+  .q-header { display: flex; align-items: flex-start; margin-bottom: 14px; }
+  .q-text { font-weight: 500; font-size: 0.95rem; padding-top: 3px; }
+  .options { margin-left: 36px; }
+  .option-label {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px 14px;
+    margin-bottom: 6px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    font-size: 0.9rem;
+  }
+  .option-label:hover { background: #f1f3f4; border-color: #bdc1c6; }
+  .option-label input { margin-right: 10px; margin-top: 3px; flex-shrink: 0; }
+  .option-label.selected { background: #e8f0fe; border-color: var(--primary); }
+
+  /* Ordering question */
+  .order-list { margin-left: 36px; list-style: none; }
+  .order-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    margin-bottom: 6px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    cursor: grab;
+    font-size: 0.9rem;
+    user-select: none;
+  }
+  .order-item:active { cursor: grabbing; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+  .order-item .drag-handle {
+    margin-right: 10px;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+  }
+  .order-rank {
+    display: inline-block;
+    background: var(--primary);
+    color: white;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 22px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-right: 10px;
+    flex-shrink: 0;
+  }
+  .order-buttons { display: flex; gap: 4px; margin-left: auto; }
+  .order-btn {
+    background: #e8eaed;
+    border: none;
+    border-radius: 4px;
+    width: 28px; height: 28px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .order-btn:hover { background: #d2d5d9; }
+
+  /* Buttons */
+  .btn {
+    display: inline-block;
+    padding: 12px 32px;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover { background: #c5221f; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .submit-row { text-align: center; margin-top: 8px; }
+
+  /* Results */
+  #results-screen { display: none; }
+  .score-circle {
+    width: 150px; height: 150px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: white;
+  }
+  .score-circle small { font-size: 0.85rem; font-weight: 400; }
+  .score-high { background: var(--success); }
+  .score-mid { background: #e37400; }
+  .score-low { background: var(--danger); }
+  .result-item {
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 0.88rem;
+  }
+  .result-item:last-child { border: none; }
+  .result-correct { color: var(--success); }
+  .result-wrong { color: var(--danger); }
+  .result-icon { font-weight: 700; margin-right: 6px; }
+  .result-explanation { color: var(--text-secondary); font-size: 0.82rem; margin-top: 2px; }
+
+  /* Time-up overlay */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .overlay.visible { display: flex; }
+  .overlay-box {
+    background: white;
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    max-width: 400px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  .overlay-box h2 { color: var(--danger); margin-bottom: 12px; }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .container { padding: 12px 8px; }
+    .card { padding: 18px 16px; }
+    .options { margin-left: 0; }
+    .header { padding: 20px; }
+    .header h1 { font-size: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Timer bar -->
+<div class="timer-bar" id="timerBar">
+  <div class="timer-display" id="timerDisplay">20:00</div>
+  <div class="progress-bar">
+    <div class="progress-fill" id="progressFill" style="width:100%"></div>
+  </div>
+  <span style="font-size:0.85rem;color:var(--text-secondary)" id="questionCount">0/26</span>
+</div>
+
+<!-- Time-up overlay -->
+<div class="overlay" id="timeUpOverlay">
+  <div class="overlay-box">
+    <h2>&#9200; Tiempo agotado</h2>
+    <p>Se han cumplido los 20 minutos.<br>Tu evaluación se enviará con las respuestas registradas hasta el momento.</p>
+    <br>
+    <button class="btn btn-danger" onclick="submitExam()">Ver resultados</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="header">
+    <h1>EVALUACIÓN — Equipo de Campo</h1>
+    <p>Proyecto Eligiendo mi Camino · IPA Perú</p>
+  </div>
+
+  <!-- DNI Screen -->
+  <div id="dni-screen">
+    <div class="card">
+      <h3 style="margin-bottom:4px">Ingresa tu DNI para comenzar</h3>
+      <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px">La evaluación tiene 26 preguntas. Dispondrás de 20 minutos una vez que ingreses tu DNI.</p>
+      <input type="text" id="dniInput" maxlength="8" placeholder="________" inputmode="numeric"
+             oninput="this.value=this.value.replace(/\D/g,'')">
+      <div class="dni-error" id="dniError"></div>
+      <br>
+      <button class="btn btn-primary" onclick="startExam()">Comenzar evaluación</button>
+    </div>
+  </div>
+
+  <!-- Exam Screen -->
+  <div id="exam-screen" style="display:none">
+
+    <!-- SECCIÓN 1 -->
+    <div class="card section-title"><h2>SECCIÓN 1 — El programa (8 preguntas)</h2></div>
+
+    <div class="card" data-q="1">
+      <div class="q-header"><span class="q-number">1</span><span class="q-text">¿Qué es Eligiendo mi Camino?</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q1" value="a"> Un programa de becas para estudiantes de 5to de secundaria</label>
+        <label class="option-label"><input type="radio" name="q1" value="b"> Un programa de orientación vocacional y tutoría de matemáticas apoyado con herramientas de IA</label>
+        <label class="option-label"><input type="radio" name="q1" value="c"> Una plataforma del MINEDU para docentes de Lima</label>
+        <label class="option-label"><input type="radio" name="q1" value="d"> Un concurso académico organizado por la DRELM</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="2">
+      <div class="q-header"><span class="q-number">2</span><span class="q-text">¿Quiénes son los estudiantes objetivo del programa?</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q2" value="a"> Estudiantes de 1ro a 3ro de secundaria</label>
+        <label class="option-label"><input type="radio" name="q2" value="b"> Estudiantes de 4to y 5to de secundaria</label>
+        <label class="option-label"><input type="radio" name="q2" value="c"> Estudiantes de 5to de secundaria de colegios públicos de Lima Metropolitana</label>
+        <label class="option-label"><input type="radio" name="q2" value="d"> Estudiantes de colegios privados seleccionados por la DRELM</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="3">
+      <div class="q-header"><span class="q-number">3</span><span class="q-text">¿Qué instituciones están detrás del programa?</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q3" value="a"> IPA, MINEDU y UNICEF</label>
+        <label class="option-label"><input type="radio" name="q3" value="b"> Banco Mundial, Middlebury College, DRELM, IPA, Anthropic y uDocz</label>
+        <label class="option-label"><input type="radio" name="q3" value="c"> IPA, Banco Mundial y MINEDU</label>
+        <label class="option-label"><input type="radio" name="q3" value="d"> DRELM, UNICEF y OEA</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="4">
+      <div class="q-header"><span class="q-number">4</span><span class="q-text">¿Cuántas rondas de recolección de datos tiene el estudio?</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q4" value="a"> Una</label>
+        <label class="option-label"><input type="radio" name="q4" value="b"> Dos</label>
+        <label class="option-label"><input type="radio" name="q4" value="c"> Tres</label>
+        <label class="option-label"><input type="radio" name="q4" value="d"> Cuatro</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="5">
+      <div class="q-header"><span class="q-number">5</span><span class="q-text">¿En qué ronda de recolección estamos actualmente?</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q5" value="a"> Línea Final</label>
+        <label class="option-label"><input type="radio" name="q5" value="b"> Línea Media</label>
+        <label class="option-label"><input type="radio" name="q5" value="c"> Línea de Base</label>
+        <label class="option-label"><input type="radio" name="q5" value="d"> Ronda piloto</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="6">
+      <div class="q-header"><span class="q-number">6</span><span class="q-text">¿Por qué el estudio necesita colegios que NO reciben el programa?</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q6" value="a"> Porque no alcanzó el presupuesto para llegar a todos</label>
+        <label class="option-label"><input type="radio" name="q6" value="b"> Porque sirven como grupo de comparación para medir el efecto real del programa</label>
+        <label class="option-label"><input type="radio" name="q6" value="c"> Porque esos colegios recibirán el programa en la siguiente ronda</label>
+        <label class="option-label"><input type="radio" name="q6" value="d"> Porque la DRELM lo exigió como condición</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="7">
+      <div class="q-header"><span class="q-number">7</span><span class="q-text">Verdadero o falso: todos los colegios participantes en el estudio recibirán las plataformas del programa al mismo tiempo.</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q7" value="true"> Verdadero</label>
+        <label class="option-label"><input type="radio" name="q7" value="false"> Falso</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="8">
+      <div class="q-header"><span class="q-number">8</span><span class="q-text">Verdadero o falso: lo que determinó qué colegios reciben el programa fue un sorteo.</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q8" value="true"> Verdadero</label>
+        <label class="option-label"><input type="radio" name="q8" value="false"> Falso</label>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 2 -->
+    <div class="card section-title"><h2>SECCIÓN 2 — Protocolo de visita (12 preguntas)</h2></div>
+
+    <div class="card" data-q="9">
+      <div class="q-header"><span class="q-number">9</span><span class="q-text">¿Qué condición debe cumplirse para que el supervisor pueda agendar una visita?</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q9" value="a"> Que el director haya confirmado disponibilidad por escrito</label>
+        <label class="option-label"><input type="radio" name="q9" value="b"> Que el Banco Mundial haya compartido la lista de docentes y la nómina de estudiantes</label>
+        <label class="option-label"><input type="radio" name="q9" value="c"> Que el encuestador haya probado los enlaces de encuesta</label>
+        <label class="option-label"><input type="radio" name="q9" value="d"> Que la UGEL haya autorizado la visita</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="10">
+      <div class="q-header"><span class="q-number">10</span><span class="q-text">¿Cuántos minutos antes de la hora pactada debe llegar el equipo al colegio?</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q10" value="a"> 15 minutos</label>
+        <label class="option-label"><input type="radio" name="q10" value="b"> 20 minutos</label>
+        <label class="option-label"><input type="radio" name="q10" value="c"> 30 minutos</label>
+        <label class="option-label"><input type="radio" name="q10" value="d"> 45 minutos</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="11">
+      <div class="q-header"><span class="q-number">11</span><span class="q-text">¿Qué hace el Encuestador 2 mientras el Encuestador 1 coordina con el encargado del AIP?</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q11" value="a"> Espera en la entrada del colegio</label>
+        <label class="option-label"><input type="radio" name="q11" value="b"> Aplica la encuesta al director</label>
+        <label class="option-label"><input type="radio" name="q11" value="c"> Pre-carga los nombres, apellidos y DNI de los estudiantes en las PCs</label>
+        <label class="option-label"><input type="radio" name="q11" value="d"> Coordina con los docentes de matemáticas</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="13">
+      <div class="q-header"><span class="q-number">13</span><span class="q-text">Un estudiante no aparece en la nómina. ¿Cómo se registra?</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q13" value="a"> No se le permite participar</label>
+        <label class="option-label"><input type="radio" name="q13" value="b"> Se registra con DNI 99999999 y su nombre completo</label>
+        <label class="option-label"><input type="radio" name="q13" value="c"> Se registra con el DNI de otro estudiante de la lista</label>
+        <label class="option-label"><input type="radio" name="q13" value="d"> Se le pide que vuelva con su DNI</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="14">
+      <div class="q-header"><span class="q-number">14</span><span class="q-text">¿Qué pantalla debe quedar preparada en cada PC antes de que entren los estudiantes?</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q14" value="a"> La página de inicio de la encuesta</label>
+        <label class="option-label"><input type="radio" name="q14" value="b"> La pregunta «¿Confirmas que tu nombre es...?»</label>
+        <label class="option-label"><input type="radio" name="q14" value="c"> El consentimiento informado</label>
+        <label class="option-label"><input type="radio" name="q14" value="d"> La primera pregunta del cuestionario</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="15">
+      <div class="q-header"><span class="q-number">15</span><span class="q-text">Ordena los escenarios de encuesta a docentes del más ideal (1) al menos ideal (3). Usa las flechas para reordenar.</span></div>
+      <ul class="order-list" id="orderList">
+        <li class="order-item" data-val="a">
+          <span class="order-rank">1</span>
+          <span class="drag-handle">&#9776;</span>
+          <span>El docente es invitado a la sala AIP</span>
+          <div class="order-buttons">
+            <button class="order-btn" onclick="moveItem(this,-1)" title="Subir">&#9650;</button>
+            <button class="order-btn" onclick="moveItem(this,1)" title="Bajar">&#9660;</button>
+          </div>
+        </li>
+        <li class="order-item" data-val="b">
+          <span class="order-rank">2</span>
+          <span class="drag-handle">&#9776;</span>
+          <span>Docente llena la encuesta en su celular en el momento que mejor pueda pero se verifica el envío en nuestra visita a la IE</span>
+          <div class="order-buttons">
+            <button class="order-btn" onclick="moveItem(this,-1)" title="Subir">&#9650;</button>
+            <button class="order-btn" onclick="moveItem(this,1)" title="Bajar">&#9660;</button>
+          </div>
+        </li>
+        <li class="order-item" data-val="c">
+          <span class="order-rank">3</span>
+          <span class="drag-handle">&#9776;</span>
+          <span>Envío del enlace para completar el cuestionario fuera de la IE; se recolecta el número telefónico</span>
+          <div class="order-buttons">
+            <button class="order-btn" onclick="moveItem(this,-1)" title="Subir">&#9650;</button>
+            <button class="order-btn" onclick="moveItem(this,1)" title="Bajar">&#9660;</button>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card" data-q="16">
+      <div class="q-header"><span class="q-number">16</span><span class="q-text">El mismo docente es titular de 5to A y 5to B en matemáticas. ¿Cuántas encuestas completa?</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q16" value="a"> Dos — una por cada sección</label>
+        <label class="option-label"><input type="radio" name="q16" value="b"> Una sola encuesta de matemáticas</label>
+        <label class="option-label"><input type="radio" name="q16" value="c"> Ninguna — solo los tutores son encuestados</label>
+        <label class="option-label"><input type="radio" name="q16" value="d"> Una por sección más una encuesta adicional de tutor</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="17">
+      <div class="q-header"><span class="q-number">17</span><span class="q-text">¿Qué debe verificar el encuestador antes de retirarse del colegio?</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q17" value="a"> Que el director haya firmado un acta de visita</label>
+        <label class="option-label"><input type="radio" name="q17" value="b"> Que todos los instrumentos hayan sido enviados: estudiantes, docentes, tutor, PIP y director</label>
+        <label class="option-label"><input type="radio" name="q17" value="c"> Que el encargado del AIP haya cerrado todas las PCs</label>
+        <label class="option-label"><input type="radio" name="q17" value="d"> Que los estudiantes hayan respondido al menos el 80% de la encuesta</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="18">
+      <div class="q-header"><span class="q-number">18</span><span class="q-text">Verdadero o falso: si el encargado del AIP no puede estar presente por una emergencia, la visita debe cancelarse y reagendarse.</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q18" value="true"> Verdadero</label>
+        <label class="option-label"><input type="radio" name="q18" value="false"> Falso</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="20">
+      <div class="q-header"><span class="q-number">20</span><span class="q-text">¿Qué información debe registrarse en el formulario de visita al terminar?</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q20" value="a"> Solo el número de estudiantes encuestados</label>
+        <label class="option-label"><input type="radio" name="q20" value="b"> Nombre de la IE, estado de cada cuestionario (presencial o virtual / número de contacto), estudiantes presentes y esperados, incidencias y observaciones</label>
+        <label class="option-label"><input type="radio" name="q20" value="c"> Nombre de la IE y hora de llegada y salida del equipo</label>
+        <label class="option-label"><input type="radio" name="q20" value="d"> Lista de estudiantes ausentes y motivo</label>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 3 -->
+    <div class="card section-title"><h2>SECCIÓN 3 — Ética y conducta en campo (6 preguntas)</h2></div>
+
+    <div class="card" data-q="21">
+      <div class="q-header"><span class="q-number">21</span><span class="q-text">Durante la aplicación, un estudiante te pregunta si su respuesta en una pregunta de matemáticas es correcta. ¿Qué haces?</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q21" value="a"> Le confirmas si es correcto para no demorar la encuesta</label>
+        <label class="option-label"><input type="radio" name="q21" value="b"> Le dices que no puedes ayudarlo con las respuestas, solo con dudas de navegación</label>
+        <label class="option-label"><input type="radio" name="q21" value="c"> Le sugieres que revise la pregunta con más calma</label>
+        <label class="option-label"><input type="radio" name="q21" value="d"> Le pides que pase a la siguiente pregunta sin responder</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="22">
+      <div class="q-header"><span class="q-number">22</span><span class="q-text">Un estudiante te dice que no quiere participar. ¿Qué haces?</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q22" value="a"> Lo convences explicándole la importancia del estudio</label>
+        <label class="option-label"><input type="radio" name="q22" value="b"> Llamas al supervisor para que hable con el estudiante</label>
+        <label class="option-label"><input type="radio" name="q22" value="c"> Le pides al docente que lo persuada</label>
+        <label class="option-label"><input type="radio" name="q22" value="d"> Respetas su decisión y le indicas que marque esa opción en la encuesta</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="23">
+      <div class="q-header"><span class="q-number">23</span><span class="q-text">Verdadero o falso: el encuestador puede comentar con los estudiantes si sus respuestas son buenas o malas para motivarlos a terminar la encuesta.</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q23" value="true"> Verdadero</label>
+        <label class="option-label"><input type="radio" name="q23" value="false"> Falso</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="24">
+      <div class="q-header"><span class="q-number">24</span><span class="q-text">¿Qué debe hacer el encuestador si nota que un estudiante está respondiendo muy rápido sin leer las preguntas?</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q24" value="a"> Ignorarlo — es decisión del estudiante</label>
+        <label class="option-label"><input type="radio" name="q24" value="b"> Acercarse discretamente y decirle que se tome su tiempo, sin señalar sus respuestas ni hacer comentarios frente al resto</label>
+        <label class="option-label"><input type="radio" name="q24" value="c"> Pedirle que reinicie la encuesta desde el principio</label>
+        <label class="option-label"><input type="radio" name="q24" value="d"> Avisarle al docente para que lo llame la atención</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="25">
+      <div class="q-header"><span class="q-number">25</span><span class="q-text">Verdadero o falso: la participación en el estudio afecta las notas de los estudiantes.</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q25" value="true"> Verdadero</label>
+        <label class="option-label"><input type="radio" name="q25" value="false"> Falso</label>
+      </div>
+    </div>
+
+    <div class="card" data-q="26">
+      <div class="q-header"><span class="q-number">26</span><span class="q-text">Verdadero o falso: el encuestador puede compartir con estudiantes o docentes de un colegio si otro colegio está en el grupo que recibe el programa.</span></div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="q26" value="true"> Verdadero</label>
+        <label class="option-label"><input type="radio" name="q26" value="false"> Falso</label>
+      </div>
+    </div>
+
+    <div class="card submit-row">
+      <button class="btn btn-primary" onclick="submitExam()" id="submitBtn">Enviar evaluación</button>
+    </div>
+  </div>
+
+  <!-- Results Screen -->
+  <div id="results-screen">
+    <div class="card" style="text-align:center">
+      <h2 style="margin-bottom:16px">Resultados</h2>
+      <div id="dniDisplay" style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:12px"></div>
+      <div class="score-circle" id="scoreCircle">
+        <span id="scoreNumber"></span>
+        <small id="scoreLabel"></small>
+      </div>
+      <p id="timeUsed" style="color:var(--text-secondary);font-size:0.9rem"></p>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:12px">Detalle por pregunta</h3>
+      <div id="resultDetails"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  PEGA AQUÍ LA URL DE TU GOOGLE APPS SCRIPT (ver INSTRUCCIONES_SETUP.txt)
+// ============================================================
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwx_KWOA5sOoabN-jZ6mUqogAFEE-vc0PYTvjbmCWoWsR5l97ycvLOglNbpesNMSvE7eQ/exec';
+
+// Answer key
+const ANSWERS = {
+  q1:'b', q2:'c', q3:'b', q4:'c', q5:'c', q6:'b',
+  q7:'false', q8:'true',
+  q9:'b', q10:'c', q11:'c', q13:'b', q14:'b',
+  q15:['a','b','c'], // correct order
+  q16:'b', q17:'b', q18:'false', q20:'b',
+  q21:'b', q22:'d', q23:'false', q24:'b', q25:'false', q26:'false'
+};
+
+const Q_LABELS = {
+  q1:'¿Qué es Eligiendo mi Camino?',
+  q2:'¿Quiénes son los estudiantes objetivo?',
+  q3:'¿Qué instituciones están detrás?',
+  q4:'¿Cuántas rondas de recolección?',
+  q5:'¿En qué ronda estamos?',
+  q6:'¿Por qué colegios sin programa?',
+  q7:'Colegios reciben plataformas al mismo tiempo',
+  q8:'Sorteo determinó asignación',
+  q9:'Condición para agendar visita',
+  q10:'Minutos antes de llegar',
+  q11:'Tarea del Encuestador 2',
+  q13:'Estudiante no en nómina',
+  q14:'Pantalla preparada en PCs',
+  q15:'Orden de escenarios de encuesta a docentes',
+  q16:'Encuestas del mismo docente',
+  q17:'Verificar antes de retirarse',
+  q18:'AIP ausente = cancelar visita',
+  q20:'Información del formulario de visita',
+  q21:'Estudiante pregunta si respuesta es correcta',
+  q22:'Estudiante no quiere participar',
+  q23:'Comentar respuestas buenas/malas',
+  q24:'Estudiante responde muy rápido',
+  q25:'Participación afecta notas',
+  q26:'Compartir info de grupo de tratamiento'
+};
+
+const CORRECT_TEXT = {
+  q1:'b) Orientación vocacional y tutoría de matemáticas con IA',
+  q2:'c) 5to de secundaria, colegios públicos de Lima Metropolitana',
+  q3:'b) Banco Mundial, Middlebury, DRELM, IPA, Anthropic y uDocz',
+  q4:'c) Tres',
+  q5:'c) Línea de Base',
+  q6:'b) Grupo de comparación para medir efecto real',
+  q7:'Falso',
+  q8:'Verdadero',
+  q9:'b) Banco Mundial compartió lista de docentes y nómina',
+  q10:'c) 30 minutos',
+  q11:'c) Pre-carga nombres y DNI en PCs',
+  q13:'b) DNI 99999999 y nombre completo',
+  q14:'b) «¿Confirmas que tu nombre es...?»',
+  q15:'a → b → c (AIP, celular en visita, enlace fuera)',
+  q16:'b) Una sola encuesta',
+  q17:'b) Todos los instrumentos enviados',
+  q18:'Falso',
+  q20:'b) Nombre IE, estado cuestionarios, estudiantes, incidencias',
+  q21:'b) Solo ayuda con navegación, no con respuestas',
+  q22:'d) Respetar decisión, marcar en encuesta',
+  q23:'Falso',
+  q24:'b) Acercarse discretamente',
+  q25:'Falso',
+  q26:'Falso'
+};
+
+let timerInterval;
+let totalSeconds = 20 * 60;
+let secondsLeft;
+let startTime;
+let userDNI = '';
+
+function startExam() {
+  const dni = document.getElementById('dniInput').value.trim();
+  if (!/^\d{8}$/.test(dni)) {
+    document.getElementById('dniError').textContent = 'Ingresa un DNI válido de 8 dígitos.';
+    return;
+  }
+  userDNI = dni;
+  document.getElementById('dni-screen').style.display = 'none';
+  document.getElementById('exam-screen').style.display = 'block';
+  document.getElementById('timerBar').classList.add('visible');
+  startTime = new Date();
+  secondsLeft = totalSeconds;
+  timerInterval = setInterval(tick, 1000);
+  updateCounter();
+}
+
+function tick() {
+  secondsLeft--;
+  const mins = Math.floor(secondsLeft / 60);
+  const secs = secondsLeft % 60;
+  const display = document.getElementById('timerDisplay');
+  display.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+
+  const pct = (secondsLeft / totalSeconds) * 100;
+  const fill = document.getElementById('progressFill');
+  fill.style.width = pct + '%';
+
+  display.classList.remove('warning','critical');
+  if (secondsLeft <= 60) {
+    display.classList.add('critical');
+    fill.style.background = '#d93025';
+  } else if (secondsLeft <= 300) {
+    display.classList.add('warning');
+    fill.style.background = '#e37400';
+  }
+
+  if (secondsLeft <= 0) {
+    clearInterval(timerInterval);
+    document.getElementById('timeUpOverlay').classList.add('visible');
+  }
+}
+
+function updateCounter() {
+  const allQs = Object.keys(ANSWERS);
+  let answered = 0;
+  allQs.forEach(q => {
+    if (q === 'q15') return answered++; // ordering always counts
+    const sel = document.querySelector(`input[name="${q}"]:checked`);
+    if (sel) answered++;
+  });
+  document.getElementById('questionCount').textContent = `${answered}/${allQs.length}`;
+}
+
+// Highlight selected option
+document.addEventListener('change', e => {
+  if (e.target.type === 'radio') {
+    const card = e.target.closest('.card');
+    card.querySelectorAll('.option-label').forEach(l => l.classList.remove('selected'));
+    e.target.closest('.option-label').classList.add('selected');
+    updateCounter();
+  }
+});
+
+// Ordering question
+function moveItem(btn, dir) {
+  const li = btn.closest('.order-item');
+  const ul = li.parentElement;
+  const items = [...ul.children];
+  const idx = items.indexOf(li);
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= items.length) return;
+  if (dir === -1) ul.insertBefore(li, items[newIdx]);
+  else ul.insertBefore(items[newIdx], li);
+  // Update rank numbers
+  [...ul.children].forEach((item, i) => {
+    item.querySelector('.order-rank').textContent = i + 1;
+  });
+}
+
+function getOrderAnswer() {
+  return [...document.getElementById('orderList').children].map(li => li.dataset.val);
+}
+
+function submitExam() {
+  clearInterval(timerInterval);
+  document.getElementById('timeUpOverlay').classList.remove('visible');
+
+  // Disable button to prevent double submit
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  const endTime = new Date();
+  const usedSeconds = Math.round((endTime - startTime) / 1000);
+  const usedMins = Math.floor(usedSeconds / 60);
+  const usedSecs = usedSeconds % 60;
+
+  let correct = 0;
+  const total = Object.keys(ANSWERS).length;
+  let detailsHTML = '';
+  const respuestas = []; // para enviar a Sheets
+
+  Object.keys(ANSWERS).forEach(q => {
+    const label = Q_LABELS[q];
+    const num = q.replace('q','');
+    let userAnswer, isCorrect;
+
+    if (q === 'q15') {
+      const order = getOrderAnswer();
+      isCorrect = JSON.stringify(order) === JSON.stringify(ANSWERS[q]);
+      userAnswer = order.join(' → ');
+    } else {
+      const sel = document.querySelector(`input[name="${q}"]:checked`);
+      userAnswer = sel ? sel.value : '(sin respuesta)';
+      isCorrect = userAnswer === ANSWERS[q];
+    }
+
+    if (isCorrect) correct++;
+
+    respuestas.push({ pregunta: q, respuesta: userAnswer, correcta: isCorrect });
+
+    const cls = isCorrect ? 'result-correct' : 'result-wrong';
+    const icon = isCorrect ? '&#10003;' : '&#10007;';
+    detailsHTML += `<div class="result-item ${cls}">
+      <span class="result-icon">${icon}</span>
+      <strong>P${num}.</strong> ${label}
+      ${!isCorrect ? `<div class="result-explanation">Tu respuesta: ${userAnswer} · Correcta: ${CORRECT_TEXT[q]}</div>` : ''}
+    </div>`;
+  });
+
+  const pct = Math.round((correct / total) * 100);
+
+  // Enviar datos a Google Sheets
+  const payload = {
+    dni: userDNI,
+    puntaje: correct,
+    total: total,
+    porcentaje: pct,
+    tiempo_usado_seg: usedSeconds,
+    respuestas: respuestas
+  };
+
+  sendToSheets(payload);
+
+  // Mostrar resultados
+  document.getElementById('exam-screen').style.display = 'none';
+  document.getElementById('timerBar').classList.remove('visible');
+  document.getElementById('results-screen').style.display = 'block';
+
+  document.getElementById('dniDisplay').textContent = `DNI: ${userDNI}`;
+  document.getElementById('scoreNumber').textContent = `${correct}/${total}`;
+  document.getElementById('scoreLabel').textContent = `${pct}%`;
+  document.getElementById('timeUsed').textContent = `Tiempo utilizado: ${usedMins}m ${String(usedSecs).padStart(2,'0')}s de 20:00`;
+
+  const circle = document.getElementById('scoreCircle');
+  circle.classList.remove('score-high','score-mid','score-low');
+  if (pct >= 80) circle.classList.add('score-high');
+  else if (pct >= 60) circle.classList.add('score-mid');
+  else circle.classList.add('score-low');
+
+  document.getElementById('resultDetails').innerHTML = detailsHTML;
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+// Enviar respuestas a Google Sheets via Apps Script
+function sendToSheets(payload) {
+  if (SCRIPT_URL === 'PEGAR_URL_AQUI') {
+    console.warn('URL de Apps Script no configurada. Las respuestas no se guardarán.');
+    showSendStatus('warning', 'URL no configurada — respuestas no guardadas. Ver INSTRUCCIONES_SETUP.txt');
+    return;
+  }
+
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(() => {
+    showSendStatus('success', 'Respuestas guardadas correctamente en Google Sheets.');
+  })
+  .catch(err => {
+    console.error('Error enviando a Sheets:', err);
+    showSendStatus('error', 'Error de red al guardar. Respaldo local guardado.');
+    // Guardar en localStorage como respaldo
+    const backups = JSON.parse(localStorage.getItem('eval_backups') || '[]');
+    backups.push({ ...payload, timestamp: new Date().toISOString() });
+    localStorage.setItem('eval_backups', JSON.stringify(backups));
+  });
+}
+
+function showSendStatus(type, msg) {
+  const existing = document.getElementById('sendStatus');
+  if (existing) existing.remove();
+
+  const div = document.createElement('div');
+  div.id = 'sendStatus';
+  div.style.cssText = `
+    text-align:center; padding:10px 16px; border-radius:8px; margin-top:12px;
+    font-size:0.85rem; font-weight:500;
+  `;
+  if (type === 'success') {
+    div.style.background = '#e6f4ea'; div.style.color = '#188038';
+  } else if (type === 'error') {
+    div.style.background = '#fce8e6'; div.style.color = '#d93025';
+  } else {
+    div.style.background = '#fef7e0'; div.style.color = '#e37400';
+  }
+  div.textContent = msg;
+  document.getElementById('results-screen').querySelector('.card').appendChild(div);
+}
+
+// Enter key on DNI input
+document.getElementById('dniInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startExam();
+});
+</script>
+</body>
+</html>
